@@ -70,8 +70,25 @@ docker compose down
   - `/streamers` 取得
   - 配信者一覧表示
   - `/notification-preferences` の取得/保存
+  - `/events` タイムライン表示
+  - FCMトークン取得 + `/device-tokens` 登録
   - 再読込
 - 詳細は `android/README.md` 参照
+
+## Sprint 3-5: FCM実送信の疎通チェック
+前提:
+- Androidアプリ側で「トークン取得＆登録」を実行済み
+- backendに `GOOGLE_APPLICATION_CREDENTIALS` が設定済み
+
+実行:
+```bash
+./scripts/fcm_smoke_test.sh
+```
+
+内容:
+- テスト用eventを1件作成
+- notification senderを実行
+- 最新通知の status/sent_at/error を表示
 
 ## A-2 API (MVP)
 - `POST /users`
