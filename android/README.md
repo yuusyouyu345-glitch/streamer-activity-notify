@@ -5,6 +5,7 @@
 ## できること
 - API (`/streamers`) の取得
 - 配信者一覧の表示
+- 通知設定 (`/notification-preferences`) の取得/保存
 - 再読込
 
 ## セットアップ

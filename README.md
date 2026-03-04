@@ -69,6 +69,7 @@ docker compose down
 - 現状機能:
   - `/streamers` 取得
   - 配信者一覧表示
+  - `/notification-preferences` の取得/保存
   - 再読込
 - 詳細は `android/README.md` 参照
 
