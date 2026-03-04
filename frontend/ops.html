@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ops Dashboard (簡易)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 860px; margin: 24px auto; padding: 0 12px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .bad { color: #b00020; font-weight: bold; }
+    code { background: #f6f6f6; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>監視ダッシュボード（簡易）</h1>
+  <p>API: <code id="api"></code></p>
+  <button id="reload">再読込</button>
+  <div id="total"></div>
+  <div id="list"></div>
+
+<script>
+const API_BASE = localStorage.getItem('apiBase') || 'http://localhost:8000';
+document.getElementById('api').textContent = API_BASE;
+
+async function load() {
+  const res = await fetch(`${API_BASE}/ops/status`);
+  const data = await res.json();
+  document.getElementById('total').innerHTML = `<p>全体 failed 通知: <span class="bad">${data.total_failed_notifications}</span></p>`;
+  const list = document.getElementById('list');
+  list.innerHTML='';
+  data.sources.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <h3>${s.source}</h3>
+      <p>latest_event_at: <code>${s.latest_event_at || 'N/A'}</code></p>
+      <p>total_events: ${s.total_events}</p>
+      <p>notifications: pending=${s.notifications.pending}, sent=${s.notifications.sent}, failed=<span class="bad">${s.notifications.failed}</span></p>
+    `;
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('reload').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

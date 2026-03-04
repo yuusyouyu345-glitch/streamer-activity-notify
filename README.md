@@ -92,3 +92,13 @@ python -m app.jobs.notification_sender
 cd backend
 uvicorn app.main:app --reload
 ```
+
+
+## E-1 監視ダッシュボード（簡易）
+- API: `GET /ops/status`
+  - sourceごとの `latest_event_at`, `total_events`, 通知件数（pending/sent/failed）を返却
+- 画面: `frontend/ops.html`
+
+利用手順:
+1. `cd backend && uvicorn app.main:app --reload`
+2. `frontend/ops.html` をブラウザで開く

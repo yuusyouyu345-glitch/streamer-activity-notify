@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
-from .models import Streamer, SourceAccount, WatchTarget, User, DeviceToken
+from .models import Streamer, SourceAccount, WatchTarget, User, DeviceToken, Event, Notification
 from .schemas import (
     UserCreate,
     UserOut,
@@ -139,3 +140,52 @@ def delete_watch_target(watch_target_id: int, db: Session = Depends(get_db)):
     db.delete(item)
     db.commit()
     return None
+
+
+@app.get("/ops/status")
+def ops_status(db: Session = Depends(get_db)):
+    sources = ["youtube", "twitch", "x"]
+    out = []
+    for src in sources:
+        latest_event = (
+            db.query(Event)
+            .filter(Event.source == src)
+            .order_by(Event.occurred_at.desc())
+            .first()
+        )
+        total_events = db.query(func.count(Event.id)).filter(Event.source == src).scalar() or 0
+        pending = (
+            db.query(func.count(Notification.id))
+            .join(Event, Event.id == Notification.event_id)
+            .filter(Event.source == src, Notification.status == "pending")
+            .scalar()
+            or 0
+        )
+        failed = (
+            db.query(func.count(Notification.id))
+            .join(Event, Event.id == Notification.event_id)
+            .filter(Event.source == src, Notification.status == "failed")
+            .scalar()
+            or 0
+        )
+        sent = (
+            db.query(func.count(Notification.id))
+            .join(Event, Event.id == Notification.event_id)
+            .filter(Event.source == src, Notification.status == "sent")
+            .scalar()
+            or 0
+        )
+        out.append(
+            {
+                "source": src,
+                "latest_event_at": latest_event.occurred_at.isoformat() if latest_event else None,
+                "total_events": total_events,
+                "notifications": {"pending": pending, "failed": failed, "sent": sent},
+            }
+        )
+
+    total_failed = db.query(func.count(Notification.id)).filter(Notification.status == "failed").scalar() or 0
+    return {
+        "sources": out,
+        "total_failed_notifications": total_failed,
+    }
