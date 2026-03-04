@@ -66,6 +66,11 @@ python -m app.jobs.notification_sender
 - 成功時: `notifications.status=sent`, `sent_at` 記録
 - 失敗時: `notifications.status=failed`, `error_message` 記録
 
+## C-2 Idempotency / Duplicate Prevention
+- DBユニーク制約: `notifications(user_id, event_id)`
+- 送信ジョブは pending のみを対象に処理
+- 通知生成時は存在チェック + ユニーク制約違反吸収で並列実行時も重複作成を防止
+
 ## Initial tables
 - users
 - streamers

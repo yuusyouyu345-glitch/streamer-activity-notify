@@ -5,12 +5,19 @@ import os
 from datetime import datetime, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.database import SessionLocal
 from app.models import DeviceToken, Event, Notification, WatchTarget
 
 
 def _ensure_notifications(db) -> int:
+    """Create pending notifications idempotently.
+
+    Safety for duplicates is provided in two layers:
+    1) App-level existence check
+    2) DB unique constraint `uq_notifications_user_event`
+    """
     created = 0
     events = db.execute(select(Event)).scalars().all()
     for ev in events:
@@ -21,9 +28,15 @@ def _ensure_notifications(db) -> int:
             ).scalar_one_or_none()
             if exists:
                 continue
-            db.add(Notification(user_id=w.user_id, event_id=ev.id, status="pending"))
-            db.flush()
-            created += 1
+
+            try:
+                with db.begin_nested():
+                    db.add(Notification(user_id=w.user_id, event_id=ev.id, status="pending"))
+                    db.flush()
+                created += 1
+            except IntegrityError:
+                # Race-safe: another worker already inserted the same notification.
+                pass
     return created
 
 
