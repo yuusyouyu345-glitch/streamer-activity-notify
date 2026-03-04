@@ -5,6 +5,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     Text,
+    Boolean,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -86,4 +87,25 @@ class DeviceToken(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     token: Mapped[str] = mapped_column(Text, nullable=False)
     platform: Mapped[str] = mapped_column(String(32), nullable=False, default="android")
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class NotificationPreference(Base):
+    __tablename__ = "notification_preferences"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "streamer_id",
+            "platform",
+            "event_type",
+            name="uq_notification_preferences_scope",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    streamer_id: Mapped[int] = mapped_column(ForeignKey("streamers.id", ondelete="CASCADE"), nullable=False)
+    platform: Mapped[str] = mapped_column(String(32), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

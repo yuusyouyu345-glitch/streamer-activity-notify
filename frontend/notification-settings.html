@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>通知設定（D-2）</title>
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    select, input, button { padding: 8px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .item { border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>通知設定（配信者 × 媒体 × 種別）</h1>
+  <p>API: <code id="api"></code></p>
+
+  <div class="card row">
+    <label>user_id <input id="userId" value="1" size="8"></label>
+    <button id="reload">再読込</button>
+  </div>
+
+  <div class="card">
+    <h2>設定を追加/更新</h2>
+    <div class="row">
+      <select id="streamerId"></select>
+      <select id="platform">
+        <option value="youtube">youtube</option>
+        <option value="twitch">twitch</option>
+        <option value="x">x</option>
+      </select>
+      <select id="eventType">
+        <option value="video_published">video_published</option>
+        <option value="stream_live">stream_live</option>
+        <option value="post_created">post_created</option>
+      </select>
+      <label><input type="checkbox" id="enabled" checked> enabled</label>
+      <button id="save">保存</button>
+    </div>
+    <p id="result"></p>
+  </div>
+
+  <div class="card">
+    <h2>現在の設定一覧</h2>
+    <div id="list" class="grid"></div>
+  </div>
+
+<script>
+const API_BASE = localStorage.getItem('apiBase') || 'http://localhost:8000';
+document.getElementById('api').textContent = API_BASE;
+
+async function loadStreamers() {
+  const res = await fetch(`${API_BASE}/streamers`);
+  const data = await res.json();
+  const sel = document.getElementById('streamerId');
+  sel.innerHTML = '';
+  (data || []).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `#${s.id} ${s.display_name}`;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadPrefs() {
+  const userId = document.getElementById('userId').value;
+  const res = await fetch(`${API_BASE}/notification-preferences?user_id=${encodeURIComponent(userId)}`);
+  const data = await res.json();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  (data || []).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.textContent = `streamer=${p.streamer_id} ${p.platform}/${p.event_type} => ${p.enabled ? 'ON' : 'OFF'}`;
+    list.appendChild(div);
+  });
+}
+
+async function savePref() {
+  const payload = {
+    user_id: Number(document.getElementById('userId').value),
+    streamer_id: Number(document.getElementById('streamerId').value),
+    platform: document.getElementById('platform').value,
+    event_type: document.getElementById('eventType').value,
+    enabled: document.getElementById('enabled').checked,
+  };
+  const res = await fetch(`${API_BASE}/notification-preferences`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
+  const body = await res.json();
+  const r = document.getElementById('result');
+  if (!res.ok) { r.textContent = `保存失敗: ${JSON.stringify(body)}`; return; }
+  r.textContent = '保存しました';
+  loadPrefs();
+}
+
+async function init() {
+  await loadStreamers();
+  await loadPrefs();
+}
+
+document.getElementById('reload').addEventListener('click', init);
+document.getElementById('save').addEventListener('click', savePref);
+init();
+</script>
+</body>
+</html>

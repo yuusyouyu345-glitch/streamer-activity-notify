@@ -65,6 +65,26 @@ class DeviceTokenOut(BaseModel):
         from_attributes = True
 
 
+class NotificationPreferenceUpsert(BaseModel):
+    user_id: int
+    streamer_id: int
+    platform: Platform
+    event_type: str = Field(min_length=1, max_length=64)
+    enabled: bool
+
+
+class NotificationPreferenceOut(BaseModel):
+    id: int
+    user_id: int
+    streamer_id: int
+    platform: str
+    event_type: str
+    enabled: bool
+
+    class Config:
+        from_attributes = True
+
+
 class WatchTargetCreate(BaseModel):
     user_id: int
     streamer_id: int

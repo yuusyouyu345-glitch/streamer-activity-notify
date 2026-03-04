@@ -4,7 +4,16 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
-from .models import Streamer, SourceAccount, WatchTarget, User, DeviceToken, Event, Notification
+from .models import (
+    Streamer,
+    SourceAccount,
+    WatchTarget,
+    User,
+    DeviceToken,
+    Event,
+    Notification,
+    NotificationPreference,
+)
 from .schemas import (
     UserCreate,
     UserOut,
@@ -12,6 +21,8 @@ from .schemas import (
     StreamerOut,
     DeviceTokenCreate,
     DeviceTokenOut,
+    NotificationPreferenceUpsert,
+    NotificationPreferenceOut,
     WatchTargetCreate,
     WatchTargetOut,
 )
@@ -97,6 +108,50 @@ def create_device_token(payload: DeviceTokenCreate, db: Session = Depends(get_db
 @app.get("/device-tokens", response_model=list[DeviceTokenOut])
 def list_device_tokens(user_id: int = Query(...), db: Session = Depends(get_db)):
     return db.query(DeviceToken).filter(DeviceToken.user_id == user_id).order_by(DeviceToken.id.desc()).all()
+
+
+@app.post("/notification-preferences", response_model=NotificationPreferenceOut, status_code=status.HTTP_201_CREATED)
+def upsert_notification_preference(payload: NotificationPreferenceUpsert, db: Session = Depends(get_db)):
+    user = db.get(User, payload.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="user not found")
+
+    streamer = db.get(Streamer, payload.streamer_id)
+    if not streamer:
+        raise HTTPException(status_code=404, detail="streamer not found")
+
+    row = (
+        db.query(NotificationPreference)
+        .filter(
+            NotificationPreference.user_id == payload.user_id,
+            NotificationPreference.streamer_id == payload.streamer_id,
+            NotificationPreference.platform == payload.platform.value,
+            NotificationPreference.event_type == payload.event_type,
+        )
+        .first()
+    )
+    if row:
+        row.enabled = payload.enabled
+        db.commit()
+        db.refresh(row)
+        return row
+
+    row = NotificationPreference(
+        user_id=payload.user_id,
+        streamer_id=payload.streamer_id,
+        platform=payload.platform.value,
+        event_type=payload.event_type,
+        enabled=payload.enabled,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@app.get("/notification-preferences", response_model=list[NotificationPreferenceOut])
+def list_notification_preferences(user_id: int = Query(...), db: Session = Depends(get_db)):
+    return db.query(NotificationPreference).filter(NotificationPreference.user_id == user_id).all()
 
 
 @app.post("/watch-targets", response_model=WatchTargetOut, status_code=status.HTTP_201_CREATED)

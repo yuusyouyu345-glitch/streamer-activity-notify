@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.database import SessionLocal
-from app.models import DeviceToken, Event, Notification, WatchTarget
+from app.models import DeviceToken, Event, Notification, WatchTarget, NotificationPreference
 
 
 def _ensure_notifications(db) -> int:
@@ -23,6 +23,21 @@ def _ensure_notifications(db) -> int:
     for ev in events:
         watchers = db.execute(select(WatchTarget).where(WatchTarget.streamer_id == ev.streamer_id)).scalars().all()
         for w in watchers:
+            pref = (
+                db.execute(
+                    select(NotificationPreference).where(
+                        NotificationPreference.user_id == w.user_id,
+                        NotificationPreference.streamer_id == ev.streamer_id,
+                        NotificationPreference.platform == ev.source,
+                        NotificationPreference.event_type == ev.event_type,
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            if pref and pref.enabled is False:
+                continue
+
             exists = db.execute(
                 select(Notification.id).where(Notification.user_id == w.user_id, Notification.event_id == ev.id)
             ).scalar_one_or_none()

@@ -107,6 +107,14 @@ uvicorn app.main:app --reload
 ```
 
 
+## D-2 通知設定画面
+- API:
+  - `POST /notification-preferences`（upsert）
+  - `GET /notification-preferences?user_id={id}`
+- 画面: `frontend/notification-settings.html`
+- 設定単位: `user_id × streamer_id × platform × event_type` の ON/OFF
+
+
 ## E-1 監視ダッシュボード（簡易）
 - API: `GET /ops/status`
   - sourceごとの `latest_event_at`, `total_events`, 通知件数（pending/sent/failed）を返却
