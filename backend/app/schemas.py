@@ -49,6 +49,22 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
+class DeviceTokenCreate(BaseModel):
+    user_id: int
+    token: str = Field(min_length=20, max_length=4096)
+    platform: str = Field(default="android", max_length=32)
+
+
+class DeviceTokenOut(BaseModel):
+    id: int
+    user_id: int
+    token: str
+    platform: str
+
+    class Config:
+        from_attributes = True
+
+
 class WatchTargetCreate(BaseModel):
     user_id: int
     streamer_id: int

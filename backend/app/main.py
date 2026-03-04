@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
-from .models import Streamer, SourceAccount, WatchTarget, User
+from .models import Streamer, SourceAccount, WatchTarget, User, DeviceToken
 from .schemas import (
     UserCreate,
     UserOut,
     StreamerCreate,
     StreamerOut,
+    DeviceTokenCreate,
+    DeviceTokenOut,
     WatchTargetCreate,
     WatchTargetOut,
 )
@@ -71,6 +73,29 @@ def create_streamer(payload: StreamerCreate, db: Session = Depends(get_db)):
 @app.get("/streamers", response_model=list[StreamerOut])
 def list_streamers(db: Session = Depends(get_db)):
     return db.query(Streamer).order_by(Streamer.id.desc()).all()
+
+
+@app.post("/device-tokens", response_model=DeviceTokenOut, status_code=status.HTTP_201_CREATED)
+def create_device_token(payload: DeviceTokenCreate, db: Session = Depends(get_db)):
+    user = db.get(User, payload.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="user not found")
+
+    row = DeviceToken(user_id=payload.user_id, token=payload.token, platform=payload.platform)
+    db.add(row)
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="device token already exists") from e
+
+    db.refresh(row)
+    return row
+
+
+@app.get("/device-tokens", response_model=list[DeviceTokenOut])
+def list_device_tokens(user_id: int = Query(...), db: Session = Depends(get_db)):
+    return db.query(DeviceToken).filter(DeviceToken.user_id == user_id).order_by(DeviceToken.id.desc()).all()
 
 
 @app.post("/watch-targets", response_model=WatchTargetOut, status_code=status.HTTP_201_CREATED)
