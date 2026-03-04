@@ -6,6 +6,7 @@
 - API (`/streamers`) の取得
 - 配信者一覧の表示
 - 通知設定 (`/notification-preferences`) の取得/保存
+- タイムライン (`/events`) の取得・表示（source/limitフィルタ）
 - 再読込
 
 ## セットアップ
