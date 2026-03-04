@@ -18,6 +18,24 @@ alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload
 ```
 
+## Sprint 3: E2Eローカル確認（最短）
+```bash
+./scripts/run_local_e2e.sh
+```
+
+上記で以下を実行します:
+- 依存インストール
+- DB migration適用
+- デモデータ投入（`python -m app.seed_demo`）
+
+※ DB接続先は `DATABASE_URL` で上書きできます（未指定時は localhost の `streamer_notify`）。
+
+その後、API起動して画面を開いて確認:
+- `frontend/index.html`
+- `frontend/notification-settings.html`
+- `frontend/timeline.html`
+- `frontend/ops.html`
+
 ## A-2 API (MVP)
 - `POST /users`
 - `GET /users`
