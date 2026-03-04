@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models import Event, SourceAccount
+from app.jobs.status_updater import update_source_status
 
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 
@@ -102,7 +103,13 @@ def run_once() -> int:
         accounts = db.execute(q).scalars().all()
         for acc in accounts:
             total_created += save_events_for_channel(db, acc.streamer_id, acc.external_id, api_key)
-            db.commit()
+        update_source_status(db, "youtube", "ok", f"created={total_created}", success=True)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        update_source_status(db, "youtube", "error", str(e)[:300], success=False)
+        db.commit()
+        raise
     finally:
         db.close()
 

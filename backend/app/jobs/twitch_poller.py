@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models import Event, SourceAccount
+from app.jobs.status_updater import update_source_status
 
 TWITCH_API_BASE = "https://api.twitch.tv/helix"
 
@@ -102,7 +103,13 @@ def run_once() -> int:
         accounts = db.execute(q).scalars().all()
         for acc in accounts:
             total_created += save_live_event_for_user(db, acc.streamer_id, acc.external_id, client_id, access_token)
-            db.commit()
+        update_source_status(db, "twitch", "ok", f"created={total_created}", success=True)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        update_source_status(db, "twitch", "error", str(e)[:300], success=False)
+        db.commit()
+        raise
     finally:
         db.close()
 

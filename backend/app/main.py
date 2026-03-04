@@ -13,6 +13,7 @@ from .models import (
     Event,
     Notification,
     NotificationPreference,
+    SourceStatus,
 )
 from .schemas import (
     UserCreate,
@@ -246,12 +247,19 @@ def ops_status(db: Session = Depends(get_db)):
             .scalar()
             or 0
         )
+        src_status = db.query(SourceStatus).filter(SourceStatus.source == src).first()
         out.append(
             {
                 "source": src,
                 "latest_event_at": latest_event.occurred_at.isoformat() if latest_event else None,
                 "total_events": total_events,
                 "notifications": {"pending": pending, "failed": failed, "sent": sent},
+                "status": {
+                    "state": src_status.status if src_status else "unknown",
+                    "message": src_status.message if src_status else None,
+                    "last_polled_at": src_status.last_polled_at.isoformat() if src_status and src_status.last_polled_at else None,
+                    "last_success_at": src_status.last_success_at.isoformat() if src_status and src_status.last_success_at else None,
+                },
             }
         )
 

@@ -126,6 +126,13 @@ uvicorn app.main:app --reload
   - sourceごとの `latest_event_at`, `total_events`, 通知件数（pending/sent/failed）を返却
 - 画面: `frontend/ops.html`
 
+## E-2 遅延/制限ステータス表示
+- DB: `source_status` テーブルで媒体別の最新状態を保持
+  - `status`: `ok` / `rate_limited` / `error` / `unknown`
+  - `message`, `last_polled_at`, `last_success_at`
+- YouTube / Twitch / X の各ポーラー実行時に `source_status` を更新
+- `GET /ops/status` で status情報を返却し、`frontend/ops.html` に表示
+
 利用手順:
 1. `cd backend && uvicorn app.main:app --reload`
 2. `frontend/ops.html` をブラウザで開く

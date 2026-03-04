@@ -31,8 +31,12 @@ async function load() {
   data.sources.forEach(s => {
     const div = document.createElement('div');
     div.className = 'card';
+    const st = s.status || {};
     div.innerHTML = `
       <h3>${s.source}</h3>
+      <p>source status: <strong>${st.state || 'unknown'}</strong> ${st.message ? `(${st.message})` : ''}</p>
+      <p>last_polled_at: <code>${st.last_polled_at || 'N/A'}</code></p>
+      <p>last_success_at: <code>${st.last_success_at || 'N/A'}</code></p>
       <p>latest_event_at: <code>${s.latest_event_at || 'N/A'}</code></p>
       <p>total_events: ${s.total_events}</p>
       <p>notifications: pending=${s.notifications.pending}, sent=${s.notifications.sent}, failed=<span class="bad">${s.notifications.failed}</span></p>

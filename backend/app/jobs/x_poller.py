@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from app.database import SessionLocal
 from app.models import Event, SourceAccount
+from app.jobs.status_updater import update_source_status
 
 X_API_BASE = "https://api.twitter.com/2"
 
@@ -133,13 +134,24 @@ def run_once() -> tuple[int, int, int]:
         for acc in accounts:
             try:
                 total_created += save_posts_for_account(db, acc.streamer_id, acc.external_id, bearer_token)
-                db.commit()
             except XApiError as e:
-                db.rollback()
                 if str(e) == "rate_limited":
                     rate_limited += 1
                 else:
                     failed += 1
+
+        if rate_limited > 0:
+            update_source_status(db, "x", "rate_limited", f"rate_limited_accounts={rate_limited}", success=False)
+        elif failed > 0:
+            update_source_status(db, "x", "error", f"failed_accounts={failed}", success=False)
+        else:
+            update_source_status(db, "x", "ok", f"created={total_created}", success=True)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        update_source_status(db, "x", "error", str(e)[:300], success=False)
+        db.commit()
+        raise
     finally:
         db.close()
 
