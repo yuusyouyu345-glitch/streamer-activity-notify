@@ -50,5 +50,27 @@ services:
       - ./backend:/app
     command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
 
+  worker:
+    build:
+      context: ./backend
+    container_name: streamer_notify_worker
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/streamer_notify
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-120}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
+      TWITCH_ACCESS_TOKEN: ${TWITCH_ACCESS_TOKEN:-}
+      X_BEARER_TOKEN: ${X_BEARER_TOKEN:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/firebase-service-account.json
+    volumes:
+      - ./backend:/app
+      - ./secrets:/secrets:ro
+    command: ["python", "-m", "app.jobs.scheduler"]
+
 volumes:
   postgres_data:

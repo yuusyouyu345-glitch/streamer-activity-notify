@@ -43,6 +43,7 @@ docker compose up -d db
 docker compose run --rm migrate
 docker compose up -d backend
 docker compose exec backend python -m app.seed_demo
+docker compose up -d worker
 ```
 
 停止:
@@ -53,6 +54,15 @@ docker compose down
 注意:
 - FCMを使う場合は `secrets/firebase-service-account.json` を配置してください。
 - APIキーは `.env` に設定します。
+
+## Sprint 3-3: 通知ジョブの定期実行
+- `worker` サービスが `python -m app.jobs.scheduler` を常駐実行
+- デフォルト間隔: `POLL_INTERVAL_SECONDS=120`
+- 1tickで実行される処理:
+  - YouTube poll
+  - Twitch poll
+  - X poll
+  - Notification sender
 
 ## A-2 API (MVP)
 - `POST /users`
