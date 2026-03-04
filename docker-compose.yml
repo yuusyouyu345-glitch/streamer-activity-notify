@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16
+    container_name: streamer_notify_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: streamer_notify
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d streamer_notify"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: streamer_notify_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/streamer_notify
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
+      TWITCH_ACCESS_TOKEN: ${TWITCH_ACCESS_TOKEN:-}
+      X_BEARER_TOKEN: ${X_BEARER_TOKEN:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/firebase-service-account.json
+    volumes:
+      - ./backend:/app
+      - ./secrets:/secrets:ro
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  migrate:
+    build:
+      context: ./backend
+    container_name: streamer_notify_migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/streamer_notify
+    volumes:
+      - ./backend:/app
+    command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+
+volumes:
+  postgres_data:

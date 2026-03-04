@@ -36,6 +36,24 @@ uvicorn app.main:app --reload
 - `frontend/timeline.html`
 - `frontend/ops.html`
 
+## Sprint 3-2: Docker起動
+```bash
+cp .env.example .env
+docker compose up -d db
+docker compose run --rm migrate
+docker compose up -d backend
+docker compose exec backend python -m app.seed_demo
+```
+
+停止:
+```bash
+docker compose down
+```
+
+注意:
+- FCMを使う場合は `secrets/firebase-service-account.json` を配置してください。
+- APIキーは `.env` に設定します。
+
 ## A-2 API (MVP)
 - `POST /users`
 - `GET /users`
