@@ -53,6 +53,19 @@ python -m app.jobs.twitch_poller
 - live中のstreamを取得し、`event_type=stream_live` で `events` に保存
 - `events(source, external_event_id)` のユニーク制約で重複登録を防止
 
+## B-3 X Poll Job
+環境変数 `X_BEARER_TOKEN` を設定したうえで実行:
+```bash
+cd backend
+export X_BEARER_TOKEN=xxxxx
+python -m app.jobs.x_poller
+```
+
+- `source_accounts.platform = "x"` のレコードを対象に監視
+- `external_id` は `username` または数値 `user_id` の両対応
+- 取得イベントは `event_type=post_created` として `events` に保存
+- レート制限（HTTP 429）はアカウント単位でカウントし処理継続
+
 ## C-1 Notification Sender Job
 FCM通知送信用ジョブ（通知ログは `notifications` テーブルに保存）:
 ```bash
