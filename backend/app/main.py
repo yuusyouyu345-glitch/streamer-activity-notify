@@ -23,6 +23,7 @@ from .schemas import (
     DeviceTokenOut,
     NotificationPreferenceUpsert,
     NotificationPreferenceOut,
+    EventOut,
     WatchTargetCreate,
     WatchTargetOut,
 )
@@ -195,6 +196,21 @@ def delete_watch_target(watch_target_id: int, db: Session = Depends(get_db)):
     db.delete(item)
     db.commit()
     return None
+
+
+@app.get("/events", response_model=list[EventOut])
+def list_events(
+    source: str | None = Query(default=None),
+    streamer_id: int | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    q = db.query(Event)
+    if source:
+        q = q.filter(Event.source == source)
+    if streamer_id:
+        q = q.filter(Event.streamer_id == streamer_id)
+    return q.order_by(Event.occurred_at.desc()).limit(limit).all()
 
 
 @app.get("/ops/status")

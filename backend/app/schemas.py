@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 import re
 
@@ -94,6 +95,19 @@ class WatchTargetOut(BaseModel):
     id: int
     user_id: int
     streamer_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class EventOut(BaseModel):
+    id: int
+    streamer_id: int
+    source: str
+    event_type: str
+    external_event_id: str
+    payload_json: str | None
+    occurred_at: datetime
 
     class Config:
         from_attributes = True

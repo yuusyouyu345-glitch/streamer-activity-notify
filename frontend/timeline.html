@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>タイムライン（D-3）</title>
+  <style>
+    body{font-family:sans-serif;max-width:980px;margin:24px auto;padding:0 12px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+    select,input,button{padding:8px}
+    .card{border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:8px}
+    .meta{color:#666;font-size:12px}
+    pre{white-space:pre-wrap;word-break:break-word;background:#f7f7f7;padding:8px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <h1>タイムライン</h1>
+  <p>API: <code id="api"></code></p>
+
+  <div class="row">
+    <label>source
+      <select id="source">
+        <option value="">all</option>
+        <option value="youtube">youtube</option>
+        <option value="twitch">twitch</option>
+        <option value="x">x</option>
+      </select>
+    </label>
+    <label>streamer
+      <select id="streamer"><option value="">all</option></select>
+    </label>
+    <label>limit <input id="limit" type="number" value="50" min="1" max="200" style="width:90px"></label>
+    <button id="reload">再読込</button>
+  </div>
+
+  <div id="list"></div>
+
+<script>
+const API_BASE = localStorage.getItem('apiBase') || 'http://localhost:8000';
+document.getElementById('api').textContent = API_BASE;
+
+async function loadStreamers(){
+  const res=await fetch(`${API_BASE}/streamers`);
+  const arr=await res.json();
+  const s=document.getElementById('streamer');
+  s.innerHTML='<option value="">all</option>';
+  (arr||[]).forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v.id; o.textContent=`#${v.id} ${v.display_name}`; s.appendChild(o);
+  })
+}
+
+async function loadEvents(){
+  const params=new URLSearchParams();
+  const source=document.getElementById('source').value;
+  const streamer=document.getElementById('streamer').value;
+  const limit=document.getElementById('limit').value || '50';
+  if(source) params.set('source',source);
+  if(streamer) params.set('streamer_id',streamer);
+  params.set('limit',limit);
+  const res=await fetch(`${API_BASE}/events?`+params.toString());
+  const arr=await res.json();
+  const list=document.getElementById('list');
+  list.innerHTML='';
+  if(!arr.length){ list.innerHTML='<p>イベントなし</p>'; return; }
+  arr.forEach(e=>{
+    const div=document.createElement('div');
+    div.className='card';
+    div.innerHTML=`
+      <div><strong>[${e.source}] ${e.event_type}</strong></div>
+      <div class="meta">event_id=${e.external_event_id} / streamer_id=${e.streamer_id} / occurred_at=${e.occurred_at}</div>
+      <pre>${e.payload_json || ''}</pre>
+    `;
+    list.appendChild(div);
+  });
+}
+
+async function init(){ await loadStreamers(); await loadEvents(); }
+document.getElementById('reload').addEventListener('click', loadEvents);
+init();
+</script>
+</body>
+</html>

@@ -115,6 +115,12 @@ uvicorn app.main:app --reload
 - 設定単位: `user_id × streamer_id × platform × event_type` の ON/OFF
 
 
+## D-3 タイムライン画面強化
+- API: `GET /events`
+  - フィルタ: `source`, `streamer_id`, `limit`
+- 画面: `frontend/timeline.html`
+  - source / streamer で絞り込み表示
+
 ## E-1 監視ダッシュボード（簡易）
 - API: `GET /ops/status`
   - sourceごとの `latest_event_at`, `total_events`, 通知件数（pending/sent/failed）を返却
