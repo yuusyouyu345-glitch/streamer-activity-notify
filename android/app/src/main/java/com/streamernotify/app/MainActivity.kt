@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.google.firebase.messaging.FirebaseMessaging
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -66,6 +67,7 @@ fun AppRoot() {
 
     var userIdInput by remember { mutableStateOf("1") }
     var statusText by remember { mutableStateOf("ready") }
+    var fcmTokenText by remember { mutableStateOf("") }
 
     var prefStreamerId by remember { mutableStateOf("") }
     var prefPlatform by remember { mutableStateOf("youtube") }
@@ -172,6 +174,39 @@ fun AppRoot() {
         }.start()
     }
 
+    fun fetchAndRegisterFcmToken() {
+        val userId = userIdInput.toLongOrNull() ?: 1L
+        statusText = "fetching fcm token..."
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    statusText = "fcm token error: ${task.exception?.message}"
+                    return@addOnCompleteListener
+                }
+                val token = task.result ?: ""
+                fcmTokenText = token
+
+                Thread {
+                    runCatching {
+                        val payload = JSONObject().apply {
+                            put("user_id", userId)
+                            put("token", token)
+                            put("platform", "android")
+                        }
+                        val req = Request.Builder()
+                            .url("$apiBase/device-tokens")
+                            .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                            .build()
+                        client.newCall(req).execute().use { res -> if (!res.isSuccessful) error("register failed: ${res.code}") }
+                    }.onSuccess {
+                        statusText = "fcm token registered"
+                    }.onFailure {
+                        statusText = "register error: ${it.message}"
+                    }
+                }.start()
+            }
+    }
+
     LaunchedEffect(Unit) {
         loadStreamers()
         loadPrefs()
@@ -190,6 +225,16 @@ fun AppRoot() {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = userIdInput, onValueChange = { userIdInput = it }, label = { Text("User ID") })
                     Button(onClick = { loadStreamers(); loadPrefs(); loadEvents() }) { Text("再読込") }
+                }
+
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("FCMトークン登録", style = MaterialTheme.typography.titleMedium)
+                        Button(onClick = { fetchAndRegisterFcmToken() }) { Text("トークン取得＆登録") }
+                        if (fcmTokenText.isNotBlank()) {
+                            Text("token(先頭): ${fcmTokenText.take(24)}...")
+                        }
+                    }
                 }
 
                 Card(modifier = Modifier.fillMaxWidth()) {

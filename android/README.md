@@ -7,12 +7,14 @@
 - 配信者一覧の表示
 - 通知設定 (`/notification-preferences`) の取得/保存
 - タイムライン (`/events`) の取得・表示（source/limitフィルタ）
+- FCMトークン取得 + `/device-tokens` 登録
 - 再読込
 
 ## セットアップ
 1. Android Studio で `android/` を開く
-2. エミュレータ起動（APIサーバはホスト側で `uvicorn` 起動）
-3. `BuildConfig.API_BASE_URL` はデフォルト `http://10.0.2.2:8000`
+2. `android/app/google-services.json` を配置（Firebaseプロジェクトから取得）
+3. エミュレータ起動（APIサーバはホスト側で `uvicorn` 起動）
+4. `BuildConfig.API_BASE_URL` はデフォルト `http://10.0.2.2:8000`
 
 ## 今後（次タスク）
 - 通知設定画面（`/notification-preferences` 連携）
