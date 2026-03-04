@@ -38,6 +38,19 @@ python -m app.jobs.youtube_poller
 - `source_accounts.platform = "youtube"` のレコードを対象に監視
 - `events(source, external_event_id)` のユニーク制約で重複登録を防止
 
+## B-2 Twitch Poll Job
+環境変数 `TWITCH_CLIENT_ID`, `TWITCH_ACCESS_TOKEN` を設定したうえで実行:
+```bash
+cd backend
+export TWITCH_CLIENT_ID=xxxxx
+export TWITCH_ACCESS_TOKEN=xxxxx
+python -m app.jobs.twitch_poller
+```
+
+- `source_accounts.platform = "twitch"` のレコードを対象に監視
+- live中のstreamを取得し、`event_type=stream_live` で `events` に保存
+- `events(source, external_event_id)` のユニーク制約で重複登録を防止
+
 ## Initial tables
 - users
 - streamers
