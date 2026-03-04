@@ -1,0 +1,77 @@
+from sqlalchemy import (
+    String,
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+    Text,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Streamer(Base):
+    __tablename__ = "streamers"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class SourceAccount(Base):
+    __tablename__ = "source_accounts"
+    __table_args__ = (UniqueConstraint("platform", "external_id", name="uq_source_accounts_platform_external_id"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    streamer_id: Mapped[int] = mapped_column(ForeignKey("streamers.id", ondelete="CASCADE"), nullable=False)
+    platform: Mapped[str] = mapped_column(String(32), nullable=False)  # x, youtube, twitch
+    external_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    streamer: Mapped["Streamer"] = relationship("Streamer")
+
+
+class WatchTarget(Base):
+    __tablename__ = "watch_targets"
+    __table_args__ = (UniqueConstraint("user_id", "streamer_id", name="uq_watch_targets_user_streamer"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    streamer_id: Mapped[int] = mapped_column(ForeignKey("streamers.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Event(Base):
+    __tablename__ = "events"
+    __table_args__ = (UniqueConstraint("source", "external_event_id", name="uq_events_source_external_event_id"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    streamer_id: Mapped[int] = mapped_column(ForeignKey("streamers.id", ondelete="CASCADE"), nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    external_event_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    payload_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    occurred_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (UniqueConstraint("user_id", "event_id", name="uq_notifications_user_event"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    sent_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
