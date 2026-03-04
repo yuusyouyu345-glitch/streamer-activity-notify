@@ -64,6 +64,14 @@ docker compose down
   - X poll
   - Notification sender
 
+## Sprint 3-4: Android最小クライアント雛形
+- `android/` に Compose ベースの最小Androidプロジェクトを追加
+- 現状機能:
+  - `/streamers` 取得
+  - 配信者一覧表示
+  - 再読込
+- 詳細は `android/README.md` 参照
+
 ## A-2 API (MVP)
 - `POST /users`
 - `GET /users`
