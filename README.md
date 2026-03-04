@@ -79,3 +79,16 @@ python -m app.jobs.notification_sender
 - events
 - notifications
 - device_tokens
+
+
+## D-1 Minimal UI (streamer register)
+`frontend/index.html` をブラウザで開くと、配信者登録と一覧表示ができます。
+
+- APIデフォルト: `http://localhost:8000`
+- FastAPIを起動してから利用してください
+
+例:
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
